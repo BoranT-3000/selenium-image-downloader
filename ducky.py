@@ -3,7 +3,6 @@ import os
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.common.by import By
-import re, urllib.parse
 from tqdm import tqdm
 import requests
 
@@ -76,24 +75,27 @@ def scroll_to_bottom(driver):
             driver.execute_script(f'window.scrollTo(0, {0});')
             break
 
-def download_images(image_urls, download_path):
-    for i, url in tqdm(enumerate(image_urls)):
-        try:
-            
-            response = requests.get(url,stream=True)
-            if 'data:' not in url and response.status_code == 200:
-                with open(os.path.join(download_path, f'image_{i}.jpg'), 'wb') as f:
-                    f.write(response.content)
-                    f.close()
-                    # print("Image downloaded successfully.")
-                    # print(f"[INFO] --> Success {f}")
-            elif 'data:' in url:
-                print("Skipping download. The URL contains 'data:'.")
-            else:
-                print("Failed to download the image.")
-        except:
-            print(f"Failed to download image {i}")
 
+def download_images(topic,image_urls, download_path):
+    
+    for i, (title, url) in tqdm(enumerate(image_urls.items())):
+        try:
+            response = requests.get(url, stream=True)
+            if 'data:' not in url and response.status_code == 200:
+                with open(os.path.join(download_path, f'{topic}_image_{i}.jpg'), 'wb') as f:
+                    f.write(response.content)
+                # print("Image downloaded successfully.")
+                # print(f"[INFO] --> Success {f}")
+            elif 'data:' in url:
+                print(f"Skipping download for {title}. The URL contains 'data:'.")
+            else:
+                print(f"Failed to download the image for {title}.")
+        except:
+            print(f"Failed to download image for {title}")
+
+# Function to add a new title and URL to the dictionary
+def add_title_and_url(title, url):
+    title_url_dict[title] = url
 
 search_query = "Star Wars"
 transformed_name = search_query.lower().replace(" ", "_")
@@ -108,29 +110,51 @@ scroll_to_bottom(driver)
 
 time.sleep(2)
 
-count_of_images = driver.execute_script('document.getElementsByClassName("tile").length')
+count_of_images = driver.execute_script('return document.getElementsByClassName("tile  tile--img  has-detail").length')
 print(f"Count of all the images inside the search is : {count_of_images}")
 
-list_of_titles,list_of_links = list(),list()
+
+# Initialize an empty dictionary to store titles and URLs
+title_url_dict = {}
+
+# list_of_titles, list_of_links = list(), list()
+i = 0 
 
 try :
-    for count in count_of_images:
+    while i<count_of_images:
         
-        driver.execute_script(f'document.getElementsByClassName(\'tile  tile--img  has-detail\')[{count}].click()')
+        driver.execute_script(f'document.getElementsByClassName("tile  tile--img  has-detail")[{i}].click()')
         time.sleep(1)
 
-        title = driver.execute_script('document.getElementsByClassName(\'detail__body  detail__body--images\')[1].children[0].children[0].innerText')
-        link = driver.execute_script('document.querySelector(\'div.detail__media__img-wrapper a\').getAttribute(\'href\');')
+        title = driver.execute_script('return document.getElementsByClassName("detail__body  detail__body--images")[1].children[0].children[0].innerText')
+        link = driver.execute_script('return document.querySelector("div.detail__media__img-wrapper a").getAttribute("href")')
         
-        list_of_titles.append(title)
-        list_of_links.append(link)
+        # list_of_titles.append(title)
+        # list_of_links.append(link)
+        add_title_and_url(title, link)
+        
 
         print(f'{title}\n{link}\n')
+
+        i=i+1
 except:
     print("Not worked")
 
-# driver.quit()
+driver.quit()
 
+# # Displaying the current dictionary
+# print(title_url_dict)
+
+# Save the dictionary to a file
+file_path = f"{transformed_name}.txt"
+with open(file_path, "w", encoding="utf-8") as f:
+    for title, url in title_url_dict.items():
+        f.write('%s:%s\n' % (title, url))
+
+print("Data saved to:", file_path)
+
+
+download_images(transformed_name,link,path)
 
 
 
