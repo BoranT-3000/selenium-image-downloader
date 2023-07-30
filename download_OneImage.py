@@ -17,3 +17,4 @@ image_url = 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.the
 filename = 'downloaded_image.jpg'  # Specify the filename and extension you want to save the image as.
 
 download_image(image_url, filename)
+
